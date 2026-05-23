@@ -6,9 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { auth, db } from '@/lib/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, getDocs, limit, query } from 'firebase/firestore';
+import { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, doc, getDoc, setDoc, collection, getDocs, limit, query } from '@/lib/supabase';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const getUniqueSuffix = () => {

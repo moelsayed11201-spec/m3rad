@@ -4,9 +4,7 @@ import { Login } from './pages/Login';
 import { useStore, User, UserRole } from './store';
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { toast } from 'sonner';
-import { auth, db } from './lib/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, getDocFromServer } from 'firebase/firestore';
+import { auth, db, onAuthStateChanged, doc, getDoc, setDoc, getDocFromServer } from './lib/supabase';
 import firebaseConfig from '../firebase-applet-config.json';
 
 const getUniqueSuffix = () => {

@@ -16,8 +16,9 @@ import {
   serverTimestamp,
   increment,
   runTransaction,
-} from "firebase/firestore";
-import { db, auth } from "@/lib/firebase";
+  db,
+  auth
+} from "@/lib/supabase";
 import { toast } from "sonner";
 import { handleFirestoreError, OperationType } from "@/lib/firestore-errors";
 

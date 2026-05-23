@@ -5,8 +5,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
 import { useStore } from '@/store';
-import { db } from '@/lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { db, collection, getDocs } from '@/lib/supabase';
 
 export function Settings() {
   const { settings: globalSettings, updateSettings } = useStore() as any;
