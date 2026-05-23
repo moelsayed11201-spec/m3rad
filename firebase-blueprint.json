@@ -1,0 +1,331 @@
+{
+  "entities": {
+    "Customer": {
+      "title": "Customer",
+      "description": "A customer in the ERP.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "nationalId": { "type": "string" },
+        "address": { "type": "string" },
+        "city": { "type": "string" },
+        "employer": { "type": "string" },
+        "salary": { "type": "number" },
+        "status": { "type": "string", "enum": ["نشط", "موقوف"] },
+        "userId": { "type": "string" }
+      },
+      "required": ["id", "name", "userId"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "A product in the inventory.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "stock": { "type": "number" },
+        "barcode": { "type": "string" },
+        "userId": { "type": "string" }
+      },
+      "required": ["id", "name", "userId"]
+    },
+    "Contract": {
+      "title": "Contract",
+      "description": "An installment contract.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "contractNumber": { "type": "string" },
+        "customerId": { "type": "string" },
+        "sponsorId": { "type": "string" },
+        "productId": { "type": "string" },
+        "quantity": { "type": "number" },
+        "productPrice": { "type": "number" },
+        "totalContractAmount": { "type": "number" },
+        "downPayment": { "type": "number" },
+        "financedAmount": { "type": "number" },
+        "interestRate": { "type": "number" },
+        "totalInterest": { "type": "number" },
+        "adminFees": { "type": "number" },
+        "startDate": { "type": "string" },
+        "frequency": { "type": "string", "enum": ["شهري", "ربع سنوي", "سنوي"] },
+        "numberOfInstallments": { "type": "number" },
+        "installmentAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["مسودة", "نشط", "متأخر", "مكتمل", "ملغى"] },
+        "userId": { "type": "string" }
+      },
+      "required": ["id", "contractNumber", "customerId", "productId", "userId"]
+    },
+    "Installment": {
+      "title": "Installment",
+      "description": "A single payment installment for a contract.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "contractId": { "type": "string" },
+        "number": { "type": "number" },
+        "dueDate": { "type": "string" },
+        "amount": { "type": "number" },
+        "paidAmount": { "type": "number" },
+        "remainingAmount": { "type": "number" },
+        "paymentDate": { "type": "string" },
+        "status": { "type": "string", "enum": ["معلق", "مدفوع", "مدفوع جزئياً", "متأخر"] },
+        "lateDays": { "type": "number" },
+        "lateFees": { "type": "number" },
+        "userId": { "type": "string" }
+      },
+      "required": ["id", "contractId", "number", "amount", "userId"]
+    },
+    "Receipt": {
+      "title": "Receipt",
+      "description": "A payment receipt.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "installmentId": { "type": "string" },
+        "contractId": { "type": "string" },
+        "customerId": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string" },
+        "method": { "type": "string", "enum": ["نقدي", "تحويل بنكي", "بطاقة ائتمان", "شيك"] },
+        "collector": { "type": "string" },
+        "notes": { "type": "string" },
+        "userId": { "type": "string" }
+      },
+      "required": ["id", "installmentId", "amount", "userId"]
+    },
+    "InventoryMovement": {
+      "title": "InventoryMovement",
+      "description": "A movement in the inventory.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "productId": { "type": "string" },
+        "quantity": { "type": "number" },
+        "type": { "type": "string", "enum": ["in", "out"] },
+        "date": { "type": "string" },
+        "referenceId": { "type": "string" },
+        "notes": { "type": "string" },
+        "userId": { "type": "string" }
+      },
+      "required": ["id", "productId", "quantity", "type", "userId"]
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "description": "A supplier of products.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "contactName": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "categories": { "type": "array", "items": { "type": "string" } },
+        "notes": { "type": "string" },
+        "userId": { "type": "string" }
+      },
+      "required": ["id", "name", "userId"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "A financial expense or income record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "notes": { "type": "string" },
+        "type": { "type": "string", "enum": ["in", "out"] },
+        "userId": { "type": "string" },
+        "referenceId": { "type": "string" }
+      },
+      "required": ["id", "name", "amount", "date", "type", "userId"]
+    },
+    "ProductCategory": {
+      "title": "ProductCategory",
+      "description": "A category for products.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "isActive": { "type": "number" },
+        "userId": { "type": "string" }
+      },
+      "required": ["id", "name", "userId"]
+    },
+    "User": {
+      "title": "User",
+      "description": "A user of the system.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["ceo", "manager", "employee"] },
+        "isActive": { "type": "boolean" },
+        "branchIds": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["id", "email", "name", "role", "isActive", "branchIds"]
+    },
+    "Branch": {
+      "title": "Branch",
+      "description": "A business branch.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["id", "name", "isActive"]
+    },
+    "Sponsor": {
+      "title": "Sponsor",
+      "description": "A contract sponsor (guarantor).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "nationalId": { "type": "string" },
+        "address": { "type": "string" },
+        "employer": { "type": "string" },
+        "branchId": { "type": "string" }
+      },
+      "required": ["id", "name", "phone", "nationalId", "branchId"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "A system audit log entry.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "branchId": { "type": "string" },
+        "actorId": { "type": "string" },
+        "actorRole": { "type": "string" },
+        "action": { "type": "string" },
+        "collectionName": { "type": "string" },
+        "documentId": { "type": "string" },
+        "beforeData": { "type": "object" },
+        "afterData": { "type": "object" },
+        "createdAt": { "type": "string" },
+        "source": { "type": "string", "enum": ["app", "system"] }
+      },
+      "required": ["id", "actorId", "actorRole", "action", "collectionName", "documentId", "createdAt", "source"]
+    },
+    "Revenue": {
+      "title": "Revenue",
+      "description": "A revenue record (income).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "notes": { "type": "string" },
+        "branchId": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "referenceId": { "type": "string" }
+      },
+      "required": ["id", "name", "amount", "branchId", "createdBy", "createdAt"]
+    },
+    "CorrectionRequest": {
+      "title": "CorrectionRequest",
+      "description": "A request for data correction.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "branchId": { "type": "string" },
+        "collectionName": { "type": "string" },
+        "documentId": { "type": "string" },
+        "requestedBy": { "type": "string" },
+        "requestedAt": { "type": "string" },
+        "reason": { "type": "string" },
+        "proposedChanges": { "type": "object" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "reviewedBy": { "type": "string" },
+        "reviewedAt": { "type": "string" },
+        "reviewNote": { "type": "string" }
+      },
+      "required": ["id", "branchId", "collectionName", "documentId", "requestedBy", "requestedAt", "proposedChanges", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "System users."
+    },
+    "/customers/{customerId}": {
+      "schema": { "$ref": "#/entities/Customer" },
+      "description": "Users' customers."
+    },
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Users' products."
+    },
+    "/contracts/{contractId}": {
+      "schema": { "$ref": "#/entities/Contract" },
+      "description": "Users' contracts."
+    },
+    "/installments/{installmentId}": {
+      "schema": { "$ref": "#/entities/Installment" },
+      "description": "Users' installments."
+    },
+    "/receipts/{receiptId}": {
+      "schema": { "$ref": "#/entities/Receipt" },
+      "description": "Users' payment receipts."
+    },
+    "/inventoryMovements/{movementId}": {
+      "schema": { "$ref": "#/entities/InventoryMovement" },
+      "description": "Users' inventory movements."
+    },
+    "/suppliers/{supplierId}": {
+      "schema": { "$ref": "#/entities/Supplier" },
+      "description": "Users' suppliers."
+    },
+    "/expenses/{expenseId}": {
+      "schema": { "$ref": "#/entities/Expense" },
+      "description": "Users' expenses and income."
+    },
+    "/product_categories/{categoryId}": {
+      "schema": { "$ref": "#/entities/ProductCategory" },
+      "description": "Users' product categories."
+    },
+    "/branches/{branchId}": {
+      "schema": { "$ref": "#/entities/Branch" },
+      "description": "Business branches."
+    },
+    "/sponsors/{sponsorId}": {
+      "schema": { "$ref": "#/entities/Sponsor" },
+      "description": "Contract sponsors."
+    },
+    "/settings/{settingId}": {
+      "schema": { "type": "object", "properties": { "value": { "type": "string" } } },
+      "description": "System settings."
+    },
+    "/auditLogs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "System audit logs."
+    },
+    "/revenues/{revenueId}": {
+      "schema": { "$ref": "#/entities/Revenue" },
+      "description": "System revenues."
+    },
+    "/correctionRequests/{requestId}": {
+      "schema": { "$ref": "#/entities/CorrectionRequest" },
+      "description": "Data correction requests."
+    }
+  }
+}

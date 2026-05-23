@@ -1,0 +1,373 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. MASTER CATCH-ALL DENY
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. HELPERS
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isActiveUser() {
+      return isSignedIn() && 
+             (
+               request.auth.token.email == 'moelsayed11201@gmail.com' ||
+               request.auth.token.email.matches('(?i)^ceo(\\+.*)?@gmail\\.com$') ||
+               (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && userDoc().isActive == true)
+             );
+    }
+
+    function userRole() {
+      return (request.auth.token.email == 'moelsayed11201@gmail.com' || request.auth.token.email.matches('(?i)^ceo(\\+.*)?@gmail\\.com$')) ? 'ceo' : userDoc().role;
+    }
+
+    function isCEO() {
+      return isSignedIn() && 
+             (request.auth.token.email == 'moelsayed11201@gmail.com' || request.auth.token.email.matches('(?i)^ceo(\\+.*)?@gmail\\.com$') || (isActiveUser() && userRole() == 'ceo'));
+    }
+
+    function isManager() {
+      return isActiveUser() && userRole() == 'manager';
+    }
+
+    function isEmployee() {
+      return isActiveUser() && userRole() == 'employee';
+    }
+
+    function userBranchIds() {
+      return userDoc().branchIds;
+    }
+
+    function canAccessBranch(branchId) {
+      return isCEO() || (isActiveUser() && branchId in userBranchIds());
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Business Logic Helper
+    // Only CEO can update or delete existing data.
+    function isCEOUpdate() {
+      return isCEO() && incoming().createdBy == existing().createdBy && incoming().createdAt == existing().createdAt;
+    }
+
+    // CREATE Validation Helper
+    function canCreateInBranch(data) {
+      return isActiveUser() && 
+             (isCEO() || (data.branchId in userBranchIds())) && 
+             data.createdBy == request.auth.uid &&
+             data.createdAt == request.time; // Enforce server time
+    }
+
+    function isValidId(id) {
+       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // 3. SCHEMA VALIDATIONS
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'email', 'name', 'role', 'branchIds', 'isActive']) &&
+             data.keys().hasOnly(['id', 'email', 'name', 'role', 'branchIds', 'isActive', 'createdAt', 'createdBy']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.email is string && data.email.size() <= 256 &&
+             data.name is string && data.name.size() <= 256 &&
+             data.role in ['ceo', 'manager', 'employee'] &&
+             data.isActive is bool &&
+             data.branchIds is list && data.branchIds.size() <= 100;
+    }
+
+    function isValidCustomer(data) {
+      return data.keys().hasAll(['id', 'name', 'branchId', 'createdBy', 'createdAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() <= 256 &&
+             data.salary is number && data.salary >= 0 &&
+             data.branchId is string && data.branchId.size() <= 128 &&
+             data.createdBy is string && data.createdBy.size() <= 128;
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['id', 'name', 'price', 'stock', 'branchId', 'createdBy', 'createdAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() <= 256 &&
+             data.price is number && data.price >= 0 &&
+             data.stock is number && data.stock >= 0 &&
+             data.branchId is string && data.branchId.size() <= 128;
+    }
+
+    function isValidBranch(data) {
+       return data.keys().hasAll(['id', 'name', 'isActive', 'createdBy', 'createdAt']) &&
+              data.id is string && data.id.size() <= 128 &&
+              data.name is string && data.name.size() <= 256 &&
+              data.isActive is bool;
+    }
+
+    function isValidSponsor(data) {
+       return data.keys().hasAll(['id', 'name', 'phone', 'nationalId', 'branchId', 'createdBy', 'createdAt']) &&
+              data.id is string && data.id.size() <= 128 &&
+              data.name is string && data.name.size() <= 256 &&
+              data.phone is string && data.phone.size() <= 32 &&
+              data.nationalId is string && data.nationalId.size() <= 32 &&
+              data.branchId is string && data.branchId.size() <= 128;
+    }
+
+    function isValidContract(data) {
+      return data.keys().hasAll(['id', 'customerId', 'totalContractAmount', 'branchId', 'createdBy', 'createdAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.customerId is string && data.customerId.size() <= 128 &&
+             data.totalContractAmount is number && data.totalContractAmount >= 0 &&
+             data.branchId is string && data.branchId.size() <= 128;
+    }
+
+    function isValidInstallment(data) {
+      return data.keys().hasAll(['id', 'contractId', 'amount', 'remainingAmount', 'branchId', 'createdBy', 'createdAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.contractId is string && data.contractId.size() <= 128 &&
+             data.amount is number && data.amount >= 0 &&
+             data.remainingAmount is number && data.remainingAmount >= 0 &&
+             data.branchId is string && data.branchId.size() <= 128;
+    }
+
+    function isValidReceipt(data) {
+      return data.keys().hasAll(['id', 'amount', 'branchId', 'createdBy', 'createdAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.amount is number && data.amount > 0 &&
+             data.branchId is string && data.branchId.size() <= 128;
+    }
+
+    function isValidInventoryMovement(data) {
+      return data.keys().hasAll(['id', 'productId', 'quantity', 'type', 'branchId', 'createdBy', 'createdAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.productId is string && data.productId.size() <= 128 &&
+             data.quantity is number && data.quantity >= 0 &&
+             data.type in ['in', 'out'] &&
+             data.branchId is string && data.branchId.size() <= 128;
+    }
+
+    function isValidExpense(data) {
+      return data.keys().hasAll(['id', 'amount', 'type', 'branchId', 'createdBy', 'createdAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.amount is number && data.amount >= 0 &&
+             data.branchId is string && data.branchId.size() <= 128;
+    }
+
+    function isValidSupplier(data) {
+       return data.keys().hasAll(['id', 'name', 'branchId', 'createdBy', 'createdAt']) &&
+              data.id is string && data.id.size() <= 128 &&
+              data.name is string && data.name.size() <= 256 &&
+              data.branchId is string && data.branchId.size() <= 128;
+    }
+
+    function isValidProductCategory(data) {
+       return data.keys().hasAll(['id', 'name', 'branchId', 'createdBy', 'createdAt']) &&
+              data.id is string && data.id.size() <= 128 &&
+              data.name is string && data.name.size() <= 256 &&
+              data.branchId is string && data.branchId.size() <= 128;
+    }
+
+    function isValidAuditLog(data) {
+      return data.keys().hasAll(['id', 'actorId', 'actorRole', 'action', 'collectionName', 'documentId', 'createdAt', 'source']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.actorId is string && data.actorId.size() <= 128 &&
+             data.action is string && data.action.size() <= 256 &&
+             data.collectionName is string && data.collectionName.size() <= 128 &&
+             data.source in ['app', 'system'];
+    }
+
+    function isValidRevenue(data) {
+      return data.keys().hasAll(['id', 'name', 'amount', 'branchId', 'createdBy', 'createdAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() <= 256 &&
+             data.amount is number && data.amount >= 0 &&
+             data.branchId is string && data.branchId.size() <= 128;
+    }
+
+    function isValidCorrectionRequest(data) {
+      return data.keys().hasAll(['id', 'branchId', 'collectionName', 'documentId', 'requestedBy', 'requestedAt', 'proposedChanges', 'status']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.status in ['pending', 'approved', 'rejected'] &&
+             data.branchId is string && data.branchId.size() <= 128;
+    }
+
+    // 4. COLLECTION MATCHES
+
+    match /test/{id} {
+      allow read: if true;
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn() && (
+                    isCEO() || 
+                    request.auth.uid == userId || 
+                    (isActiveUser() && resource.data.branchIds.hasAny(userBranchIds()))
+                  );
+      
+      // Allow user self-creation during registration or quick-login bootstrap
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming()) &&
+                    (
+                      // Case A: Bootstrap admin/ceo/employee accounts with their respective roles & status
+                      (
+                        (request.auth.token.email == 'moelsayed11201@gmail.com' || request.auth.token.email.matches('(?i)^ceo(\\+.*)?@gmail\\.com$')) && 
+                        incoming().role == 'ceo' && incoming().isActive == true
+                      ) ||
+                      (
+                        request.auth.token.email.matches('(?i)^admin(\\+.*)?@gmail\\.com$') && 
+                        incoming().role == 'manager' && incoming().isActive == true
+                      ) ||
+                      (
+                        request.auth.token.email.matches('(?i)^employee(\\+.*)?@gmail\\.com$') && 
+                        incoming().role == 'employee' && incoming().isActive == true
+                      ) ||
+                      // Case B: General self-registration (any other email) - must be inactive and not CEO
+                      (
+                        incoming().role in ['manager', 'employee'] && 
+                        incoming().isActive == false
+                      )
+                    );
+
+      // Allow users to update their own document, and allow allowed demo emails or CEO to update user records
+      allow update: if isSignedIn() && (
+                      isCEO() || 
+                      (
+                        request.auth.uid == userId && isValidUser(incoming()) &&
+                        (
+                          // Allowed demo accounts can self-update or self-activate (e.g. during quick login updates)
+                          request.auth.token.email in ['moelsayed11201@gmail.com', 'ceo@gmail.com', 'admin@gmail.com', 'employee@gmail.com'] ||
+                          request.auth.token.email.matches('(?i)^(ceo|admin|employee)(\\+.*)?@gmail\\.com$')
+                        )
+                      )
+                    );
+      
+      allow delete: if isCEO();
+    }
+
+    match /branches/{branchId} {
+      allow read: if isSignedIn();
+      allow write: if isCEO();
+    }
+
+    match /counters/{branchId} {
+      allow read: if isSignedIn() && canAccessBranch(branchId);
+      allow create, update: if isSignedIn() && canAccessBranch(branchId) && 
+                            request.resource.data.keys().hasAll(['nextCustomerNumber']) &&
+                            request.resource.data.nextCustomerNumber is number && 
+                            request.resource.data.nextCustomerNumber >= 1;
+      allow delete: if isCEO();
+    }
+
+    // Generic Business Data Rule
+    function businessDataRules(validator) {
+      return {
+        "read": isSignedIn() && canAccessBranch(resource.data.branchId),
+        "create": canCreateInBranch(request.resource.data) && validator(request.resource.data),
+        "update": isCEO() && validator(request.resource.data),
+        "delete": isCEO()
+      };
+    }
+
+    match /customers/{id} {
+      allow read: if isSignedIn() && canAccessBranch(existing().branchId);
+      allow create: if canCreateInBranch(incoming()) && isValidCustomer(incoming());
+      allow update: if isCEO() && isValidCustomer(incoming());
+      allow delete: if isCEO();
+    }
+
+    match /products/{id} {
+      allow read: if isSignedIn() && canAccessBranch(existing().branchId);
+      allow create: if (isCEO() || isManager() || isEmployee()) && canCreateInBranch(incoming()) && isValidProduct(incoming());
+      allow update: if isCEO() && isValidProduct(incoming());
+      allow delete: if isCEO();
+    }
+
+    match /contracts/{id} {
+      allow read: if isSignedIn() && canAccessBranch(existing().branchId);
+      allow create: if (isCEO() || isManager() || isEmployee()) && canCreateInBranch(incoming()) && isValidContract(incoming());
+      allow update: if isCEO() && isValidContract(incoming());
+      allow delete: if isCEO();
+    }
+
+    match /installments/{id} {
+      allow read: if isSignedIn() && canAccessBranch(existing().branchId);
+      allow create: if (isCEO() || isManager()) && canCreateInBranch(incoming()) && isValidInstallment(incoming());
+      allow update: if isCEO() && isValidInstallment(incoming());
+      allow delete: if isCEO();
+    }
+
+    match /receipts/{id} {
+      allow read: if isSignedIn() && canAccessBranch(existing().branchId);
+      allow create: if (isCEO() || isManager() || isEmployee()) && canCreateInBranch(incoming()) && isValidReceipt(incoming());
+      allow update: if isCEO() && isValidReceipt(incoming());
+      allow delete: if isCEO();
+    }
+
+    match /inventoryMovements/{id} {
+      allow read: if isSignedIn() && canAccessBranch(existing().branchId);
+      allow create: if (isCEO() || isManager() || isEmployee()) && canCreateInBranch(incoming()) && isValidInventoryMovement(incoming());
+      allow update: if isCEO() && isValidInventoryMovement(incoming());
+      allow delete: if isCEO();
+    }
+
+    match /expenses/{id} {
+      allow read: if isSignedIn() && canAccessBranch(existing().branchId);
+      allow create: if (isCEO() || isManager()) && canCreateInBranch(incoming()) && isValidExpense(incoming());
+      allow update: if isCEO() && isValidExpense(incoming());
+      allow delete: if isCEO();
+    }
+
+    match /suppliers/{id} {
+      allow read: if isSignedIn() && canAccessBranch(existing().branchId);
+      allow create: if (isCEO() || isManager()) && canCreateInBranch(incoming()) && isValidSupplier(incoming());
+      allow update: if isCEO() && isValidSupplier(incoming());
+      allow delete: if isCEO();
+    }
+
+    match /product_categories/{id} {
+      allow read: if isSignedIn() && canAccessBranch(existing().branchId);
+      allow create: if (isCEO() || isManager()) && canCreateInBranch(incoming()) && isValidProductCategory(incoming());
+      allow update: if isCEO() && isValidProductCategory(incoming());
+      allow delete: if isCEO();
+    }
+
+    match /sponsors/{id} {
+      allow read: if isSignedIn() && canAccessBranch(existing().branchId);
+      allow create: if isSignedIn() && canCreateInBranch(incoming()) && isValidSponsor(incoming());
+      allow update: if isCEO() && isValidSponsor(incoming());
+      allow delete: if isCEO();
+    }
+
+    match /settings/{settingId} {
+      allow read: if isSignedIn();
+      allow write: if isCEO();
+    }
+
+    match /auditLogs/{id} {
+      allow read: if isCEO();
+      allow create: if isSignedIn() && isValidAuditLog(incoming());
+      allow update, delete: if false;
+    }
+
+    match /revenues/{id} {
+      allow read: if isSignedIn() && canAccessBranch(existing().branchId);
+      allow create: if (isCEO() || isManager()) && canCreateInBranch(incoming()) && isValidRevenue(incoming());
+      allow update: if isCEO() && isValidRevenue(incoming());
+      allow delete: if isCEO();
+    }
+
+    match /correctionRequests/{id} {
+      allow read: if isSignedIn() && (isCEO() || canAccessBranch(existing().branchId));
+      allow create: if isSignedIn() && canCreateInBranch(incoming()) && isValidCorrectionRequest(incoming());
+      allow update: if isCEO() && isValidCorrectionRequest(incoming());
+      allow delete: if isCEO();
+    }
+  }
+}
